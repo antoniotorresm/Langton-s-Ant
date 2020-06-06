@@ -1,0 +1,6 @@
+/*
+/src/com/camoga/ant/test/*
+!/src/
+!/res/
+!pom.xml
+!.gitignore
