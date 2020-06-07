@@ -41,6 +41,10 @@
 			<artifactId>lwjgl-opengl</artifactId>
 			<version>3.2.3</version>
 		</dependency>
-
-	</dependencies>
+   		<dependency>
+   		  <groupId>org.lwjgl.osgi</groupId>
+   		  <artifactId>org.lwjgl.glfw</artifactId>
+   		  <version>3.2.1.2</version>
+   		</dependency>
+ </dependencies>
 </project>
