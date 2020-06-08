@@ -3,18 +3,18 @@
 layout(local_size_x = 32) in;
 
 // resources
-layout(std430, binding = 0) readonly buffer in_rules { uint rules[]; };
-layout(std430, binding = 1) writeonly buffer out_res { uint res[]; };
+layout(std430, binding = 0) readonly buffer in_rules { uint rules[];};
+layout(std430, binding = 1) buffer in_chunk { uint chunk[]; };
+layout(std430, binding = 2) writeonly buffer out_res { uint res[]; };
 
 // Settings
-const int itpf = 100000;//33333334;
-const int chunk_size = 2048;
+const int itpf = 10000000;//33333334;
 const int chunk_pow = 11;
+const int chunk_size = 1<<chunk_pow;
 const int directions_x[4] = int[4](0, 1, 0, -1);
 const int directions_y[4] = int[4](-1, 0, 1, 0);
 
 uint state[64];
-uint chunk[chunk_size * chunk_size];
 uint dir = 0;
 uint rule_size;
 
@@ -40,22 +40,27 @@ void build_state() {
 
 void main(void) {
     uint id = gl_GlobalInvocationID.x;
-    int x = chunk_size / 2;
-    int y = chunk_size / 2;
+    uint x = chunk_size / 2;
+    uint y = chunk_size / 2;
     build_state();
-    for (int i = 0; i < itpf; i++) {
+    for(int i = 0; i < chunk_size*chunk_size; i++) {
+    	chunk[i] = 0U;
+    }
+
+    for (int i = 0; i < 100000; i++) {
         if (x >= chunk_size || x < 0 || y >= chunk_size || y < 0) {
             res[id] = 1;
             return;
         }
-        int index = x | (y << chunk_pow);
+
+        uint index = (id<<(chunk_pow<<1)) | x | (y << chunk_pow);
         dir = (dir + state[chunk[index]]) & 3U;
         chunk[index] += 1;
         if (chunk[index] == rule_size) {
-            chunk[index] = 0;
+            chunk[index] = 0U;
         }
         x += directions_x[dir];
-        y += directions_y[dir];
+        y += directions_y[dir]; // 11, 35, 47
     }
-    res[id] = x;
+    res[id] = 0;
 }
