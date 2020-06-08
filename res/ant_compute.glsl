@@ -1,6 +1,6 @@
 #version 430 core
 
-layout(local_size_x = 32) in;
+layout(local_size_x = 16) in;
 
 // resources
 layout(std430, binding = 0) readonly buffer in_rules { uint rules[];};
@@ -8,7 +8,7 @@ layout(std430, binding = 1) buffer in_chunk { uint chunk[]; };
 layout(std430, binding = 2) writeonly buffer out_res { uint res[]; };
 
 // Settings
-const int itpf = 100000000;//33333334;
+const int itpf = 10000000;//33333334;
 const int chunk_pow = 11;
 const int chunk_size = 1<<chunk_pow;
 const int directions_x[4] = int[4](0, 1, 0, -1);
@@ -43,8 +43,8 @@ void main(void) {
     uint x = chunk_size / 2;
     uint y = chunk_size / 2;
     build_state();
-    for(int i = 0; i < chunk_size*chunk_size; i++) {
-    	chunk[i] = 0U;
+    for(uint i = 0; i < chunk_size*chunk_size; i++) {
+    	chunk[i | (id<<(chunk_pow<<1))] = 0U;
     }
 
     for (int i = 0; i < itpf; i++) {

@@ -23,7 +23,7 @@ public class GPUWorker {
 
     public GPUWorker(int ID, int pType) {
         // Create buffers
-        this.nAnts = 64;
+        this.nAnts = 16;
         this.workerID = ID;
         this.type = pType;
         this.rulesBuffer = BufferUtils.createByteBuffer(this.nAnts * 2 * 4); // 8 bytes per ant (2 int per ant)
@@ -60,7 +60,7 @@ public class GPUWorker {
 
         long[] rules = new long[this.nAnts];
         for (int i = 1; i <= this.nAnts; i++) {
-            rules[i-1] = i;
+            rules[i-1] = i + 32;
         }
 
         // Write rules to GPU
@@ -89,7 +89,7 @@ public class GPUWorker {
         GL43.glBindBufferBase(GL43.GL_SHADER_STORAGE_BUFFER, 2, this.resSSBO);
 
         // Run shader
-        GL43.glDispatchCompute(this.nAnts / 32, 1, 1);
+        GL43.glDispatchCompute((int) Math.ceil(this.nAnts / 32.0), 1, 1);
 
         // Get results back
         GL43.glMemoryBarrier(GL43.GL_SHADER_STORAGE_BARRIER_BIT);
@@ -98,7 +98,8 @@ public class GPUWorker {
         this.resBuffer.position(0);
         for (int i = 0; i < this.nAnts; i++) {
             var res = resBuffer.getInt();
-        	System.out.println("rule " + i + "-> " + res);
+            if (res == 1)
+        	    System.out.println("rule " + rules[i]);
         }
         GL43.glUnmapBuffer(GL43.GL_SHADER_STORAGE_BUFFER);
     }
