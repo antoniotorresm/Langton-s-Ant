@@ -61,13 +61,22 @@ public class GPUWorker {
 
         // Write rules to GPU
         GL43.glBindBuffer(GL43.GL_SHADER_STORAGE_BUFFER, this.rulesSSBO);
-        GL43.glMapBuffer(GL43.GL_SHADER_STORAGE_BUFFER, GL43.GL_WRITE_ONLY, this.nAnts * 2 * 4, this.rulesBuffer);
+        this.rulesBuffer = GL43.glMapBuffer(GL43.GL_SHADER_STORAGE_BUFFER, GL43.GL_WRITE_ONLY);
         // low and high
-        for (int i = 0; i < this.nAnts; i+=2) {
-            this.rulesBuffer.putInt(i, ((int) rules[i]) & 0xffffffff);
-            this.rulesBuffer.putInt(i + 1, (int) ((rules[i] & 0xffffffff00000000L) >>> 32));
+        this.rulesBuffer.clear();
+        this.rulesBuffer.position(0);
+        for (int i = 0; i < this.nAnts; i++) {
+            this.rulesBuffer.putInt(((int) rules[i]) & 0xffffffff);
+            this.rulesBuffer.putInt((int) ((rules[i] & 0xffffffff00000000L) >>> 32));
         }
+
+        //this.rulesBuffer.position(0);
+        //for (int i = 0; i < this.nAnts; i++) {
+        //    System.out.println("ruletest " + (i + 1) + " => " + (this.rulesBuffer.getInt() | (this.rulesBuffer.getInt() << 32)));
+        //}
+
         GL43.glUnmapBuffer(GL43.GL_SHADER_STORAGE_BUFFER);
+        GL43.glMemoryBarrier(GL43.GL_SHADER_STORAGE_BARRIER_BIT);
 
         // Bind buffers to shader
         GL43.glUseProgram(GPUWorkerManager.getShaderProgramID());

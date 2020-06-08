@@ -57,5 +57,5 @@ void main(void) {
         x += directions_x[dir];
         y += directions_y[dir];
     }
-    res[id] = 0;
+    res[id] = x;
 }
