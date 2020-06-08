@@ -8,7 +8,7 @@ layout(std430, binding = 1) buffer in_chunk { uint chunk[]; };
 layout(std430, binding = 2) writeonly buffer out_res { uint res[]; };
 
 // Settings
-const int itpf = 10000000;//33333334;
+const int itpf = 100000000;//33333334;
 const int chunk_pow = 11;
 const int chunk_size = 1<<chunk_pow;
 const int directions_x[4] = int[4](0, 1, 0, -1);
@@ -47,7 +47,7 @@ void main(void) {
     	chunk[i] = 0U;
     }
 
-    for (int i = 0; i < 100000; i++) {
+    for (int i = 0; i < itpf; i++) {
         if (x >= chunk_size || x < 0 || y >= chunk_size || y < 0) {
             res[id] = 1;
             return;
