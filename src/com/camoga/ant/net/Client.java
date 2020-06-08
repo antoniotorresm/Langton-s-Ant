@@ -20,6 +20,7 @@ import java.util.ArrayDeque;
 import java.util.Properties;
 import java.util.logging.Logger;
 
+import com.camoga.ant.GPUWorkerManager;
 import com.camoga.ant.WorkerManager;
 import com.camoga.ant.gui.Window;
 
@@ -77,14 +78,17 @@ public class Client {
 //			} else numworkers = 1;
 //		}
 
-		assignments[0] = new ArrayDeque<Long>();
-		assignments[1] = new ArrayDeque<Long>();
-		storedrules[0] = new ByteArrayOutputStream();
-		storedrules[1] = new ByteArrayOutputStream();
-		WorkerManager.setWorkers(normalworkers, hexworkers);
-		
-		connectionthread = new Thread(() -> run(), "Client Thread");
-		connectionthread.start();
+		GPUWorkerManager.setWorkers(1, 0);
+		GPUWorkerManager.start();
+
+		//assignments[0] = new ArrayDeque<Long>();
+		//assignments[1] = new ArrayDeque<Long>();
+		//storedrules[0] = new ByteArrayOutputStream();
+		//storedrules[1] = new ByteArrayOutputStream();
+		//WorkerManager.setWorkers(normalworkers, hexworkers);
+		//
+		//connectionthread = new Thread(() -> run(), "Client Thread");
+		//connectionthread.start();
 	}
 	
 	public void register(String username, String hash) {

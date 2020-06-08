@@ -99,7 +99,7 @@ public class GPUWorkerManager {
         String source = "";
         try {
             source = new String(Files.readAllBytes(
-                    Paths.get(GPUWorkerManager.class.getClass().getResource("/ant_compute.glsl").toURI())));
+                    Paths.get(GPUWorkerManager.class.getClassLoader().getResource("ant_compute.glsl").toURI())));
         } catch (IOException | URISyntaxException e) {
             e.printStackTrace();
         }
