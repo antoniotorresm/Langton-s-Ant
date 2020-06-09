@@ -11,7 +11,7 @@ layout(std430, binding = 4) readonly buffer buf_rule_size { int rule_sizes[]; };
 layout(std430, binding = 5) buffer buf_pos { uint positions[]; };
 
 // Settings
-const int itpf = 10000000;//33333334;
+const int itpf = 5000000;//33333334;
 const int chunk_pow = 11;
 const int chunk_size = 1<<chunk_pow;
 const int directions_x[4] = int[4](0, 1, 0, -1);
