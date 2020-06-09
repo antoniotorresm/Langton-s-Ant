@@ -1,6 +1,6 @@
 #version 430 core
 
-layout(local_size_x = 16) in;
+layout(local_size_x = 32) in;
 
 // resources
 layout(std430, binding = 0) readonly buffer in_states { int states[]; };
@@ -11,11 +11,11 @@ layout(std430, binding = 4) readonly buffer buf_rule_size { int rule_sizes[]; };
 layout(std430, binding = 5) buffer buf_pos { int positions[]; };
 
 // Settings
-const int itpf = 1000;//33333334;
+const int itpf = 1000000;
 const int chunk_pow = 11;
 const int chunk_size = 1<<chunk_pow;
+const int directions[4] = int[4](-chunk_size, 1, chunk_size, -1);
 const int directions_x[4] = int[4](0, 1, 0, -1);
-const int directions_y[4] = int[4](-1, 0, 1, 0);
 
 void main(void) {
     int id = int(gl_GlobalInvocationID.x);
@@ -23,29 +23,29 @@ void main(void) {
         return; // Already finished this ant
     }
 
-    int x = positions[2 * id];
-    int y = positions[(2 * id) + 1];
+    int cindex = positions[id];
+    int x = cindex & (chunk_size-1);
     int d = dirs[id];
 
     for (int i = 0; i < itpf; i++) {
-        if (x >= chunk_size || x < 0 || y >= chunk_size || y < 0) {
-            positions[2*id] = x;
-            positions[(2 * id) + 1] = y;
-            dirs[id] = d;
+        if (x < 0 || x >= chunk_size || cindex < 0 || cindex >= chunk_size*chunk_size) {
+//            positions[2*id] = x;
+//            positions[(2 * id) + 1] = y;
+//            dirs[id] = d;
             res[id] = 1;
             return;
         }
-        int index = (id<<(chunk_pow<<1)) | x | (y << chunk_pow);
-        d = (d + states[chunks[index]]) & 3;
+
+        int index = (id<<(chunk_pow<<1)) | cindex;
+        d = (d + states[(id<<6)|chunks[index]]) & 3;
         chunks[index] += 1;
         if (chunks[index] == rule_sizes[id]) {
             chunks[index] = 0;
         }
+        cindex += directions[d];
         x += directions_x[d];
-        y += directions_y[d]; // 11, 35, 47
     }
-    positions[2*id] = x;
-    positions[(2 * id) + 1] = y;
+    positions[id] = cindex;
     dirs[id] = d;
     res[id] = 0;
 }

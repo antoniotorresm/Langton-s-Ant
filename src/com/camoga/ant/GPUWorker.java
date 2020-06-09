@@ -29,7 +29,7 @@ public class GPUWorker {
 
     public GPUWorker(int ID, int pType) {
         // Create buffers
-        this.nAnts = 16;
+        this.nAnts = 64;
         this.workerID = ID;
         this.type = pType;
     }
@@ -91,9 +91,9 @@ public class GPUWorker {
             GL44.glBufferStorage(GL43.GL_SHADER_STORAGE_BUFFER, a, GL44.GL_MAP_READ_BIT | GL44.GL_MAP_WRITE_BIT);
 
             // Position info
-            a = BufferUtils.createIntBuffer(this.nAnts * 2);
-            for (int i = 0; i < this.nAnts * 2; i++) {
-                a.put(i, 2048 / 2); // chunk_size / 2
+            a = BufferUtils.createIntBuffer(this.nAnts);
+            for (int i = 0; i < this.nAnts; i++) {
+                a.put(i, 1024 + 1024*2048); // chunk_size / 2
             }
             GL15.glBindBuffer(GL43.GL_SHADER_STORAGE_BUFFER, this.xySSBO);
             GL44.glBufferStorage(GL43.GL_SHADER_STORAGE_BUFFER, a, GL44.GL_MAP_READ_BIT);
@@ -111,7 +111,7 @@ public class GPUWorker {
 
         // Write state to GPU
         GL43.glBindBuffer(GL43.GL_SHADER_STORAGE_BUFFER, this.stateSSBO);
-        var stateBuffer = GL43.glMapBuffer(GL43.GL_SHADER_STORAGE_BUFFER, GL43.GL_WRITE_ONLY);
+        var stateBuffer = GL43.glMapBuffer(GL43.GL_SHADER_STORAGE_BUFFER, GL43.GL_READ_ONLY | GL43.GL_WRITE_ONLY);
         var ruleSizeList = new ArrayList<Integer>();
         stateBuffer.position(0);
         for (int i = 0; i < this.nAnts; i++) {
@@ -128,9 +128,9 @@ public class GPUWorker {
 
         // Write rules size to GPU
         GL43.glBindBuffer(GL43.GL_SHADER_STORAGE_BUFFER, this.ruleSizeSSBO);
-        var ruleSizeBuffer = GL43.glMapBuffer(GL43.GL_SHADER_STORAGE_BUFFER, GL43.GL_WRITE_ONLY);
+        var ruleSizeBuffer = GL43.glMapBuffer(GL43.GL_SHADER_STORAGE_BUFFER, GL43.GL_READ_ONLY | GL43.GL_WRITE_ONLY);
         for (int i = 0; i < ruleSizeList.size(); i++) {
-            ruleSizeBuffer.putInt(i, ruleSizeList.get(i));
+            ruleSizeBuffer.putInt(ruleSizeList.get(i));
         }
         GL43.glUnmapBuffer(GL43.GL_SHADER_STORAGE_BUFFER);
         GL43.glMemoryBarrier(GL43.GL_SHADER_STORAGE_BARRIER_BIT);
@@ -145,13 +145,14 @@ public class GPUWorker {
         GL43.glBindBufferBase(GL43.GL_SHADER_STORAGE_BUFFER, 5, this.xySSBO);
 
         // Run shader
-        final int SHADER_PASSES = 10000;
+        final int SHADER_PASSES = 100;
         for (int i = 0; i < SHADER_PASSES; i++) {
             GL43.glDispatchCompute((int) Math.ceil(this.nAnts / 32.0), 1, 1);
             GL43.glMemoryBarrier(GL43.GL_SHADER_STORAGE_BARRIER_BIT);
         }
         
         // Get results back
+        GL43.glMemoryBarrier(GL43.GL_SHADER_STORAGE_BARRIER_BIT);
         GL43.glBindBuffer(GL43.GL_SHADER_STORAGE_BUFFER, this.resSSBO);
         var resBuffer = GL43.glMapBuffer(GL43.GL_SHADER_STORAGE_BUFFER, GL43.GL_READ_ONLY);
         resBuffer.position(0);
@@ -161,7 +162,6 @@ public class GPUWorker {
         	    System.out.println("rule " + rules[i] + " -> " + res);
         }
         GL43.glUnmapBuffer(GL43.GL_SHADER_STORAGE_BUFFER);
-        GL43.glMemoryBarrier(GL43.GL_SHADER_STORAGE_BARRIER_BIT);
         resBuffer = null;
     }
 
