@@ -144,7 +144,7 @@ public class GPUWorker {
         GL43.glBindBufferBase(GL43.GL_SHADER_STORAGE_BUFFER, 5, this.xySSBO);
 
         // Run shader
-        final int SHADER_PASSES = 10;
+        final int SHADER_PASSES = 20;
         for (int i = 0; i < SHADER_PASSES; i++) {
             GL43.glDispatchCompute((int) Math.ceil(this.nAnts / 32.0), 1, 1);
             GL43.glMemoryBarrier(GL43.GL_SHADER_STORAGE_BARRIER_BIT);
