@@ -73,14 +73,14 @@ public class GPUWorkerManager {
 
     public static void start() {
         if (shaderProgramID == null) {
-            setupOpenGL();
+            setupOpenGLContext();
         }
 		for(GPUWorker w : workers) {
 			w.start();
 		}
     }
     
-    private static void setupOpenGL() {
+    private static void setupOpenGLContext() {
         // Setup program & OpenGL
         GLFWErrorCallback errorCallback;
         GLFW.glfwSetErrorCallback(errorCallback = GLFWErrorCallback.createPrint(System.err));

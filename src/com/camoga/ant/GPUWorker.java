@@ -1,11 +1,13 @@
 package com.camoga.ant;
 
+import java.nio.Buffer;
 import java.nio.IntBuffer;
 import java.util.ArrayList;
 import java.util.Arrays;
 
 import com.camoga.ant.net.Client;
 
+import org.lwjgl.BufferUtils;
 import org.lwjgl.opengl.GL15;
 import org.lwjgl.opengl.GL43;
 import org.lwjgl.opengl.GL44;
@@ -22,6 +24,7 @@ public class GPUWorker {
     private int nAnts;
     private boolean kill = false;
     private boolean running = false;
+    private boolean firstRun = true;
     private Thread thread;
 
     public GPUWorker(int ID, int pType) {
@@ -34,50 +37,6 @@ public class GPUWorker {
     public void start() {
         if(running) return;
         
-        this.stateSSBO = GL15.glGenBuffers();
-        this.chunkSSBO = GL15.glGenBuffers();
-        this.resSSBO = GL15.glGenBuffers();
-        this.dirSSBO = GL15.glGenBuffers();
-        this.ruleSizeSSBO = GL15.glGenBuffers();
-        this.xySSBO = GL15.glGenBuffers();
-
-        // State info
-        int[] auxArr = new int[this.nAnts * 64];
-        Arrays.fill(auxArr, 0);
-        GL15.glBindBuffer(GL43.GL_SHADER_STORAGE_BUFFER, this.stateSSBO);
-        GL44.glBufferStorage(GL43.GL_SHADER_STORAGE_BUFFER, IntBuffer.wrap(auxArr), GL44.GL_MAP_READ_BIT | GL44.GL_MAP_WRITE_BIT);
-        auxArr = null;
-
-        // Chunks info
-        auxArr = new int[this.nAnts * 2048 * 2048];
-        Arrays.fill(auxArr, 0);
-        GL15.glBindBuffer(GL43.GL_SHADER_STORAGE_BUFFER, this.chunkSSBO);
-        GL44.glBufferStorage(GL43.GL_SHADER_STORAGE_BUFFER, IntBuffer.wrap(auxArr), GL44.GL_MAP_READ_BIT);
-        auxArr = null;
-
-        // Result info
-        auxArr = new int[this.nAnts];
-        Arrays.fill(auxArr, 0);
-        GL15.glBindBuffer(GL43.GL_SHADER_STORAGE_BUFFER, this.resSSBO);
-        GL44.glBufferStorage(GL43.GL_SHADER_STORAGE_BUFFER, IntBuffer.wrap(auxArr), GL44.GL_MAP_READ_BIT);
-
-        // Direction info
-        GL15.glBindBuffer(GL43.GL_SHADER_STORAGE_BUFFER, this.dirSSBO);
-        GL44.glBufferStorage(GL43.GL_SHADER_STORAGE_BUFFER, IntBuffer.wrap(auxArr), GL44.GL_MAP_READ_BIT);
-
-        // Rule size info
-        GL15.glBindBuffer(GL43.GL_SHADER_STORAGE_BUFFER, this.ruleSizeSSBO);
-        GL44.glBufferStorage(GL43.GL_SHADER_STORAGE_BUFFER, IntBuffer.wrap(auxArr), GL44.GL_MAP_READ_BIT | GL44.GL_MAP_WRITE_BIT);
-        auxArr = null; // Was reused for direction, result and rule size buffers
-
-        // Position info
-        auxArr = new int[this.nAnts * 2];
-        Arrays.fill(auxArr, 2048 / 2);
-        GL15.glBindBuffer(GL43.GL_SHADER_STORAGE_BUFFER, this.xySSBO);
-        GL44.glBufferStorage(GL43.GL_SHADER_STORAGE_BUFFER, IntBuffer.wrap(auxArr), GL44.GL_MAP_READ_BIT);
-        auxArr = null;
-
-        // TODO
 		//thread = new Thread(() -> run(), "AntWorker"+workerID+" (GPU)");
         //thread.start();
         run();
@@ -90,11 +49,64 @@ public class GPUWorker {
             return;
         }
 
+        if (this.firstRun) {
+
+            // TODO
+            // Create OpenGL context for current thread
+            this.stateSSBO = GL15.glGenBuffers();
+            this.chunkSSBO = GL15.glGenBuffers();
+            this.resSSBO = GL15.glGenBuffers();
+            this.dirSSBO = GL15.glGenBuffers();
+            this.ruleSizeSSBO = GL15.glGenBuffers();
+            this.xySSBO = GL15.glGenBuffers();
+
+            // State info
+            IntBuffer a = BufferUtils.createIntBuffer(this.nAnts * 64);
+            BufferUtils.zeroBuffer(a);
+            GL15.glBindBuffer(GL43.GL_SHADER_STORAGE_BUFFER, this.stateSSBO);
+            GL44.glBufferStorage(GL43.GL_SHADER_STORAGE_BUFFER, a, GL44.GL_MAP_READ_BIT | GL44.GL_MAP_WRITE_BIT);
+
+            // Chunks info
+            a = BufferUtils.createIntBuffer(this.nAnts * 2048 * 2048);
+            BufferUtils.zeroBuffer(a);
+            GL15.glBindBuffer(GL43.GL_SHADER_STORAGE_BUFFER, this.chunkSSBO);
+            GL44.glBufferStorage(GL43.GL_SHADER_STORAGE_BUFFER, a, GL44.GL_MAP_READ_BIT);
+
+            // Result info
+            a = BufferUtils.createIntBuffer(this.nAnts);
+            BufferUtils.zeroBuffer(a);
+            GL15.glBindBuffer(GL43.GL_SHADER_STORAGE_BUFFER, this.resSSBO);
+            GL44.glBufferStorage(GL43.GL_SHADER_STORAGE_BUFFER, a, GL44.GL_MAP_READ_BIT);
+
+            //// Direction info
+            a = BufferUtils.createIntBuffer(this.nAnts);
+            BufferUtils.zeroBuffer(a);
+            GL15.glBindBuffer(GL43.GL_SHADER_STORAGE_BUFFER, this.dirSSBO);
+            GL44.glBufferStorage(GL43.GL_SHADER_STORAGE_BUFFER, a, GL44.GL_MAP_READ_BIT);
+
+            //// Rule size info
+            a = BufferUtils.createIntBuffer(this.nAnts);
+            BufferUtils.zeroBuffer(a);
+            GL15.glBindBuffer(GL43.GL_SHADER_STORAGE_BUFFER, this.ruleSizeSSBO);
+            GL44.glBufferStorage(GL43.GL_SHADER_STORAGE_BUFFER, a, GL44.GL_MAP_READ_BIT | GL44.GL_MAP_WRITE_BIT);
+
+            // Position info
+            a = BufferUtils.createIntBuffer(this.nAnts * 2);
+            for (int i = 0; i < this.nAnts * 2; i++) {
+                a.put(i, 2048 / 2); // chunk_size / 2
+            }
+            GL15.glBindBuffer(GL43.GL_SHADER_STORAGE_BUFFER, this.xySSBO);
+            GL44.glBufferStorage(GL43.GL_SHADER_STORAGE_BUFFER, a, GL44.GL_MAP_READ_BIT);
+            a = null;
+
+            this.firstRun = false;
+        }
+
         //long[] rules = Client.getRules(0, this.nAnts);
 
         long[] rules = new long[this.nAnts];
         for (int i = 1; i <= this.nAnts; i++) {
-            rules[i-1] = i + 32;
+            rules[i-1] = i;
         }
 
         // Write state to GPU
@@ -103,23 +115,12 @@ public class GPUWorker {
         var ruleSizeList = new ArrayList<Integer>();
         stateBuffer.position(0);
         for (int i = 0; i < this.nAnts; i++) {
-            int ruleLow = ((int) rules[i]) & 0xffffffff;
-            int ruleHigh = (int) ((rules[i] & 0xffffffff00000000L) >>> 32);
-            int ruleSize = 0;
-            for (int j = 0; ruleLow != 0; j++) {
-                stateBuffer.putInt(j, ((ruleLow & 1) == 1) ? 1 : 3);
-                ruleLow /= 2;
-                ruleSize++;
+            long rule = rules[i];
+            for (int j = 0; j < 64; j++) {
+                stateBuffer.putInt((rule & 1) == 1 ? 1 : 3);
+                rule >>>= 1;
             }
-            if (ruleHigh != 0) {
-                ruleSize = 32;
-            }
-            for (int j = ruleSize; ruleHigh != 0; j++) {
-                stateBuffer.putInt(j, ((ruleHigh & 1) == 1) ? 1 : 3);
-                ruleHigh /= 2;
-                ruleSize++;
-            }
-            ruleSizeList.add(ruleSize);
+        ruleSizeList.add(64 - Long.numberOfLeadingZeros(rules[i]));
         }
         GL43.glUnmapBuffer(GL43.GL_SHADER_STORAGE_BUFFER);
         GL43.glMemoryBarrier(GL43.GL_SHADER_STORAGE_BARRIER_BIT);
@@ -144,7 +145,7 @@ public class GPUWorker {
         GL43.glBindBufferBase(GL43.GL_SHADER_STORAGE_BUFFER, 5, this.xySSBO);
 
         // Run shader
-        final int SHADER_PASSES = 20;
+        final int SHADER_PASSES = 10000;
         for (int i = 0; i < SHADER_PASSES; i++) {
             GL43.glDispatchCompute((int) Math.ceil(this.nAnts / 32.0), 1, 1);
             GL43.glMemoryBarrier(GL43.GL_SHADER_STORAGE_BARRIER_BIT);
@@ -160,6 +161,7 @@ public class GPUWorker {
         	    System.out.println("rule " + rules[i] + " -> " + res);
         }
         GL43.glUnmapBuffer(GL43.GL_SHADER_STORAGE_BUFFER);
+        GL43.glMemoryBarrier(GL43.GL_SHADER_STORAGE_BARRIER_BIT);
         resBuffer = null;
     }
 
